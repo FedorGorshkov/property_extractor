@@ -1,0 +1,14 @@
+requests~=2.32.5
+openpyxl~=3.1.5
+lxml~=6.0.2
+img2table~=1.4.2
+pandas~=3.0.1
+numpy~=1.26.4
+opencv-python~=4.11.0.86
+PyMuPDF~=1.27.1
+pillow~=12.1.1
+spacy~=3.8.11
+beautifulsoup4~=4.14.3
+polars~=1.38.1
+matplotlib~=3.10.8
+scipy~=1.17.1

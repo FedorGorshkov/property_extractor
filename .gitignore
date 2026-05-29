@@ -1,0 +1,16 @@
+.venv/
+*.pdf
+scratch*
+*.xlsx
+.idea
+*.db
+test*.txt
+*.csv
+*.json
+/my_project.egg-info/
+*.png
+/devtools/temp_pdf_checkpoints/
+/src/logs.txt
+src/__pycache__/
+storage/__pycache__/
+/storage/test.py
