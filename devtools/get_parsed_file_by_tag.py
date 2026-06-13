@@ -18,7 +18,7 @@ OUTPUT_FILE = f"../test2.txt"
 conn = sqlite3.connect('../storage/file_bank.db')
 cur = conn.cursor()
 # Tid = cur.execute("SELECT file_id FROM files WHERE mentioned_tags LIKE ?", (f"%{TAG}%", )).fetchone()[0]
-Tid = 9
+Tid = 13
 filenames = '"' + ''", "''.join(cur.execute("SELECT file_name FROM files WHERE file_id = ?", (Tid,)).fetchone()) + '"'
 print(f"Found at files: {filenames}")
 pure_text, headers, tables = cur.execute("SELECT pure_text, headers, tables FROM files WHERE file_id = ?", (Tid, )).fetchone()

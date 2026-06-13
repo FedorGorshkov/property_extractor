@@ -153,8 +153,6 @@ class ImageProcessor:
 
         for cnt in contours:
             crx, cry, crw, crh = cv2.boundingRect(cnt)
-            if 1790 < cry < 1900:
-                print("Got it!")
             if crw < min_w or crh < min_h:
                 continue
 
@@ -204,17 +202,12 @@ class ImageProcessor:
             a1 = (b1[2] - b1[0]) * (b1[3] - b1[1])
             a2 = (b2[2] - b2[0]) * (b2[3] - b2[1])
             return inter / (a1 + a2 - inter)
-        def is_same(b1: tuple[int, int, int, int], b2: tuple[int, int, int, int]) -> bool:
-            def check(ix1, iy1, ix2, iy2, ox1, oy1, ox2, oy2, tolerance=10):
-                return (
-                        ix1 >= ox1 - tolerance and
-                        iy1 >= oy1 - tolerance and
-                        ix2 <= ox2 + tolerance and
-                        iy2 <= oy2 + tolerance
-                )
-            if check(b1[0], b1[1], b1[2], b1[3], b2[0], b2[1], b2[2], b2[3]) or check(b2[0], b2[1], b2[2], b2[3], b1[0], b1[1], b1[2], b1[3]):
-                return True
-            return False
+        def is_contained(inner_b: tuple, outer_b: tuple, tol: int) -> bool:
+            return (inner_b[0] >= outer_b[0] - tol and
+                    inner_b[1] >= outer_b[1] - tol and
+                    inner_b[2] <= outer_b[2] + tol and
+                    inner_b[3] <= outer_b[3] + tol)
+
         # 1. Дедуп. Кандидат — дубликат уже добавленного, если IoU > DEDUP_IOU (тот же контур в другой ветке)
         #    ИЛИ он является shrink-тенью уже добавленного. Оставляем того, у кого меньше depth.
         unique: list[dict] = []
@@ -226,20 +219,27 @@ class ImageProcessor:
                     break
             if not duplicate:
                 unique.append(c)
-        print(unique)
+
+        # 2. Убираем обёртки: бокс считается обёрткой, если внутри него лежит другой кандидат,
+        #    существенно меньший по площади и не являющийся его drilldown-тенью.
+        contain_tol = max(self.PAD_PX * 4, self.SHRINK)
         answer = []
-        if unique:
-            min_horizontal = min(t["n_h"] for t in unique)
-            for t1 in unique:
-                if t1["n_h"] == min_horizontal:
-                    found = False
-                    for t2 in answer:
-                        if t1 != t2 and is_same(t1["bbox"], t2["bbox"]):
-                            found = True
-                            break
-                    if not found:
-                        answer.append(t1)
-        print(answer)
+        for c in unique:
+            cb = c["bbox"]
+            c_area = (cb[2] - cb[0]) * (cb[3] - cb[1])
+            is_wrapper = False
+            for other in unique:
+                if other is c:
+                    continue
+                ob = other["bbox"]
+                o_area = (ob[2] - ob[0]) * (ob[3] - ob[1])
+                if (is_contained(ob, cb, tol=contain_tol) and
+                        o_area < c_area * 0.85 and
+                        not is_drilldown_shadow(c, other)):
+                    is_wrapper = True
+                    break
+            if not is_wrapper:
+                answer.append(c)
         return answer
 
     def get_table_bboxes(self) -> tuple[list[tuple[int, int, int, int]], np.ndarray]:
